@@ -5,7 +5,8 @@ from transformers import AutoModel
 
 class sentencesVec(nn.Module):
     def __init__(self, bert: str="vinai/bertweet-base", layer_index: int=-2):
-        self.bert_tweet = AutoModel.from_pretrained(bert)
+        super(sentencesVec, self).__init__()
+        self.bert_tweet = AutoModel.from_pretrained(bert, output_hidden_states=True)
         self.idx = layer_index
 
     def forward(self, sent):
@@ -23,6 +24,7 @@ class sentencesVec(nn.Module):
 
 class Classifier_bert(nn.Module):
     def __init__(self, src_bert: str="vinai/bertweet-base", bert_layerChoice: int=-2, attn_num :int=2, out_dim: int=2):
+        super(Classifier_bert, self).__init__()
         self.sourceBert = src_bert
         self.attentionNum = attn_num
         self.outNum = out_dim
