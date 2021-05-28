@@ -1,5 +1,4 @@
 from torch.utils.data import DataLoader
-from torch.nn.utils.rnn import pad_sequence
 from torch.nn.utils import clip_grad_norm_
 import torch
 import torch.nn as nn
@@ -7,7 +6,6 @@ from torch import optim
 from dataset import DisasTweet_ds, collater
 from model import Classifier_bert
 from tqdm import tqdm
-import os
 import sys
 
 def train(
