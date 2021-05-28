@@ -7,18 +7,15 @@ import torch.nn.functional as F
 
 
 class sentencesVec(nn.Module):
-    def __init__(self, bert: str, layer_index: int=-2):
-        self.bert_tweet = AutoModel.from_pretrained("vinai/bertweet-base")
+    def __init__(self, bert: str="vinai/bertweet-base", layer_index: int=-2):
+        self.bert_tweet = AutoModel.from_pretrained(bert)
         self.idx = layer_index
 
-    def forward(self, kw, sent):
+    def forward(self, sent):
         """
         transform sentences to vector by BERT
-            * keyword: (batch_size)
-            * sentence: (batch_size, seq_len)
+            * sent: (batch_size, seq_len)
         """
-        self.idx = -2 # get the second-to-last layer output of BERT
-
 
         # object : tuple = (the output of the embeddings, the output of each layer)
         object = self.bert_tweet(sent)
@@ -28,13 +25,12 @@ class sentencesVec(nn.Module):
         return hd_states # (batch, seq_len, hidden_dim)
 
 class Classifier_bert(nn.Module):
-    def __init__(self, kw_embd_dim: int=10, src_bert: str="vinai/bertweet-base", attn_num :int=2, out_dim: int=2):
-        self.kw_embedding_dim = kw_embd_dim
+    def __init__(self, src_bert: str="vinai/bertweet-base", bert_layerChoice: int=-2, attn_num :int=2, out_dim: int=2):
         self.sourceBert = src_bert
         self.attentionNum = attn_num
         self.outNum = out_dim
     
-        self.cvtr_layer = sentencesVec(self.sourceBert)
+        self.cvtr_layer = sentencesVec(bert=self.sourceBert, layer_index=bert_layerChoice)
 
         self.tweet_extractor = nn.Sequential(
             nn.Linear(768, 384),
@@ -62,15 +58,15 @@ class Classifier_bert(nn.Module):
         self.out = nn.Linear(1, self.outNum)
         self.logSoftmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, text, keyword, kw_len):
+    def forward(self, kw_len, text):
         """
-        text: (batch_size)
-        keyword: (batch_size)
+        kw_len: (batch_size)
+        text: (batch_size, seq_len)
         """
 
         # get contextualized embedding
         batch_size = text.shape[0]
-        sentVec = self.cvtr_layer(keyword + text) # sentVec: (batch_size, total_seq_len, 768)
+        sentVec = self.cvtr_layer(text) # sentVec: (batch_size, total_seq_len, 768)
 
         tweet_vec = sentVec[:, kw_len:, :] # tweet_vec: (batch_size, tweet_seq_len, 768)
         tweet_vec = self.tweet_extractor(tweet_vec) # tweet_vec: (batch_size, tweet_seq_len, 16)
