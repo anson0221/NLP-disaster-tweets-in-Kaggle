@@ -94,11 +94,11 @@ if __name__=='__main__':
     srcBERT = 'vinai/bertweet-base'
     bertlayer_idx = -2
     attn_layerNum = 2
-    batchSize = 16
+    batchSize = 8
     epoch_num = 30
     lr = 0.007
     device_ = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
     train(
         from_ck_point=from_check_point,
         model_path=modelPath,
