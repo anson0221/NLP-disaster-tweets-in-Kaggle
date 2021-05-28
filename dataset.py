@@ -53,7 +53,7 @@ class DisasTweet_ds(Dataset):
     
     def _preprocess_text(self):
         html = re.compile(r'((http)|(https))://\S+') # \S: all non-space symbols
-        for sent in range(self.text):
+        for sent in self.text:
             html.sub(repl=r'', string=sent)
 
     def __getitem__(self, idx):
