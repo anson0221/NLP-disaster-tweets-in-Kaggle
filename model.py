@@ -43,7 +43,9 @@ class Classifier_bert(nn.Module):
         )
 
         self.kw_encoder = nn.Sequential(
-            nn.Linear(768, 16),
+            nn.Linear(768, 384),
+            nn.Tanh(),
+            nn.Linear(384, 16),
             nn.Tanh()
         )
 
@@ -53,24 +55,25 @@ class Classifier_bert(nn.Module):
         self.V = nn.Linear(16, 16)
 
         # output
-        self.reduce_dim = nn.Linear(16, 1, bias=False)
+        self.reduce_dim = nn.Linear(16, 1)
         self.out = nn.Linear(1, self.outNum)
         self.logSoftmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, kw_len, text):
+    def forward(self, keyword, text):
         """
-        kw_len: (batch_size)
-        text: (batch_size, seq_len)
+        keyword: (batch_size, kw_seq_len)
+        text: (batch_size, text_seq_len)
         """
 
         # get contextualized embedding
         batch_size = text.shape[0]
-        sentVec = self.cvtr_layer(text) # sentVec: (batch_size, total_seq_len, 768)
+        kw_seq_len = keyword.shape[1]
+        sentVec = self.cvtr_layer(torch.cat((keyword, text), dim=1)) # sentVec: (batch_size, total_seq_len, 768)
 
-        tweet_vec = sentVec[:, kw_len:, :] # tweet_vec: (batch_size, tweet_seq_len, 768)
+        tweet_vec = sentVec[:, kw_seq_len:, :] # tweet_vec: (batch_size, tweet_seq_len, 768)
         tweet_vec = self.tweet_extractor(tweet_vec) # tweet_vec: (batch_size, tweet_seq_len, 16)
 
-        kwVec = sentVec[:, :kw_len, :] # kwVec: (batch_size, keyword_seq_len, 768)
+        kwVec = sentVec[:, :kw_seq_len, :] # kwVec: (batch_size, keyword_seq_len, 768)
         kwVec = self.kw_encoder(kwVec) # kwVec: (batch_size, keyword_seq_len, 16)
 
         newVec = torch.cat((kwVec, tweet_vec), dim=1) # newVec: (batch_size, total_seq_len, 16)

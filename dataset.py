@@ -13,29 +13,34 @@ class collater():
         """
         sample (a list for a batch of samples) : 
             [
-                (len_of_keyword_0: int, sentence_0: list[int], target_0: int), 
-                (len_of_keyword_1: int, sentence_1: list[int], target_1: int),
+                (keyword_0: list[int], sentence_0: list[int], target_0: int), 
+                (keyword_1: list[int], sentence_1: list[int], target_1: int),
                 ..., 
-                (len_of_keyword_n: int, sentence_n: list[int], target_n: int),
+                (keyword_n: list[int], sentence_n: list[int], target_n: int),
             ]
 
         return values:
-            * len_kw: (batch_size)
-            * sentence: (batch_size, seq_len)
+            * keyword: (batch_size, kw_seq_len)
+            * sentence: (batch_size, sent_seq_len)
             * target: (batch_size)
         """
 
-        len_kw = []
+        batch_size = len(sample)
+        
+        keyword = []
         sentence = []
-        target = []
-        for len_of_kw, sent, tgt in sample:
-            len_kw.append(len_of_kw)
+        target = torch.zeros(batch_size)
+        i = 0
+        for kw, sent, tgt in sample:
+            keyword.append(kw)
             sentence.append(sent)
-            target.append(tgt)
+            target[i] = tgt
+            i += 1
 
+        keyword = pad_sequence(keyword, batch_first=True, padding_value=self.padding) 
         sentence = pad_sequence(sentence, batch_first=True, padding_value=self.padding)
 
-        return len_kw, sentence, target
+        return keyword, sentence, target
 
 
 class DisasTweet_ds(Dataset):
@@ -58,11 +63,10 @@ class DisasTweet_ds(Dataset):
 
     def __getitem__(self, idx):
         kw = torch.tensor(self.tknzr_tweet.encode('['+self.keyword[idx]+']:'))
-        kw_len = kw.size()[0]
         sent = torch.tensor(self.tknzr_tweet.encode(self.text[idx]))
         tgt = torch.tensor(self.target[idx])
 
-        return kw_len, torch.cat((kw, sent), dim=0), tgt
+        return kw, sent, tgt
 
     def __len__(self):
         return len(self.text)
