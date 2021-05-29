@@ -34,7 +34,7 @@ def train(
         bert_layerChoice=choose_bert_layer_as_embd, 
         attn_num=attentionNUM, 
         out_dim=tgt_categoryNum
-    )
+    ).to(device)
 
     if from_ck_point:
         check_point = torch.load(model_path, map_location=device)
@@ -50,15 +50,19 @@ def train(
         epoch_loss = 0
         print()
         print('Epoch #'+str(epoch))
-        for len_kw, sentence, target in tqdm(train_loader):
+        for keyword, sentence, target in tqdm(train_loader):
             """
-            * len_kw: (batch_size)
-            * sentence: (batch_size, seq_len)
+            * keyword: (batch_size, kw_seq_len)
+            * sentence: (batch_size, sent_seq_len)
             * target: (batch_size)
             """
 
+            keyword = keyword.to(device)
+            sentence = sentence.to(device)
+            target = target.to(device, dtype=torch.long)
+
             # out: (batch_size, 2)
-            out = model(kw_len=len_kw, text=sentence)
+            out = model(keyword=keyword, text=sentence)
 
             loss = 0
             optimizer.zero_grad()
