@@ -20,7 +20,7 @@ class sentencesVec(nn.Module):
 
         hd_states = object.hidden_states[self.idx] # (batch, seq_len, hidden_dim)
 
-        return hd_states # (batch, seq_len, hidden_dim)
+        return hd_states # (batch_size, seq_len, hidden_dim)
 
 class Classifier_bert(nn.Module):
     def __init__(self, src_bert: str="vinai/bertweet-base", bert_layerChoice: int=-2, attn_num :int=2, out_dim: int=2):
