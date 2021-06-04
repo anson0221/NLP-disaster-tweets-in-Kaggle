@@ -4,6 +4,9 @@ import re
 import torch
 from transformers import AutoTokenizer
 from torch.nn.utils.rnn import pad_sequence
+import nltk
+from nltk.corpus import stopwords
+import string
 
 class collater():
     def __init__(self, pad_value):
@@ -25,11 +28,11 @@ class collater():
             * target: (batch_size)
         """
 
-        batch_size = len(sample)
         
+
         keyword = []
         sentence = []
-        target = torch.zeros(batch_size)
+        target = torch.zeros(len(sample))
         i = 0
         for kw, sent, tgt in sample:
             keyword.append(kw)
@@ -39,34 +42,67 @@ class collater():
 
         keyword = pad_sequence(keyword, batch_first=True, padding_value=self.padding) 
         sentence = pad_sequence(sentence, batch_first=True, padding_value=self.padding)
-
         return keyword, sentence, target
+
+        # elif self.mode=='test':
+        #     for kw, sent, tgt in sample:
+        #         keyword.append(kw)
+        #         sentence.append(sent)
+
+        #     keyword = pad_sequence(keyword, batch_first=True, padding_value=self.padding) 
+        #     sentence = pad_sequence(sentence, batch_first=True, padding_value=self.padding)
+        #     return keyword, sentence
+
+        
 
 
 class DisasTweet_ds(Dataset):
-    def __init__(self, train_file_path: str='./data/train.csv', src_bert :str="vinai/bertweet-base"):
-        df = pd.read_csv(train_file_path)
-
+    def __init__(self, file_path: str='./data/train.csv', src_bert :str="vinai/bertweet-base", mode: str='train'):
+        df = pd.read_csv(file_path)
+        print(df.info())
+        print(df.describe())
         self.keyword = df['keyword'].fillna('none')
         self.text = df['text'].fillna('none text.')
-        self.target = df['target']
+
+        self.tknzr_tweet = AutoTokenizer.from_pretrained(src_bert, use_fast=False)
+        self.vocab = self.tknzr_tweet.get_vocab()
+        self.pad_token = self.vocab[self.tknzr_tweet.pad_token]
+
+        nltk.download('stopwords')
+        self.stop_words = stopwords.words('english')
+
+        self.punc = []
+        for p in string.punctuation:
+            self.punc.append(self.vocab[p])
+
+        self.mode = mode
+        if self.mode=='train':
+            self.target = df['target'].fillna(0)
+        elif self.mode=='test':
+            self.id = df['id']
 
         self._preprocess_text()
 
-        self.tknzr_tweet = AutoTokenizer.from_pretrained(src_bert, use_fast=False)
-        self.pad_token = self.tknzr_tweet.get_vocab()[self.tknzr_tweet.pad_token]
-    
+
     def _preprocess_text(self):
         html = re.compile(r'((http)|(https))://\S+') # \S: all non-space symbols
         for sent in self.text:
-            html.sub(repl=r'', string=sent)
+            sent = html.sub(repl=r'', string=sent) # remove URL
 
+            # remove all stop-words
+            for s in self.stop_words:
+                sent = re.sub(pattern=r'\s'+s+r'\s+', repl=r' ', string=sent)
+            
     def __getitem__(self, idx):
-        kw = torch.tensor(self.tknzr_tweet.encode('['+self.keyword[idx]+']:'))
-        sent = torch.tensor(self.tknzr_tweet.encode(self.text[idx]))
-        tgt = torch.tensor(self.target[idx])
+        kw = torch.tensor(self.tknzr_tweet.encode('['+self.keyword[idx]+']: '))
+        sent = self.tknzr_tweet.encode(self.text[idx])
+        sent = torch.tensor([wp for wp in sent if wp not in self.punc]) # remove all punctuation
 
-        return kw, sent, tgt
+        if self.mode=='train':
+            tgt = torch.tensor(self.target[idx])
+            return kw, sent, tgt
+        elif self.mode=='test':
+            return kw, sent
 
     def __len__(self):
         return len(self.text)
