@@ -46,9 +46,9 @@ class Classifier_bert(nn.Module):
             nn.Linear(384, 128),
             nn.Tanh(),
             nn.Linear(128, 64),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(64, 16),
-            nn.Sigmoid()
+            nn.ReLU()
         )
 
         # Attention
@@ -60,13 +60,13 @@ class Classifier_bert(nn.Module):
             nn.Linear(self.MAX_SEQ_LEN, 128),
             nn.Tanh(),
             nn.Linear(128, 64), 
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(64, 32),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(32, 8),
             nn.ReLU(),
             nn.Linear(8, 1),
-            nn.Sigmoid()
+            nn.ReLU()
         )
 
         # output
