@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.nn.modules.linear import Linear
 from transformers import AutoModel
 
 
@@ -23,9 +24,17 @@ class sentencesVec(nn.Module):
         return hd_states # (batch_size, seq_len, hidden_dim)
 
 class Classifier_bert(nn.Module):
-    def __init__(self, src_bert: str="vinai/bertweet-base", bert_layerChoice: int=-2, attn_num :int=2, out_dim: int=2):
+    def __init__(
+        self, 
+        src_bert: str="vinai/bertweet-base", 
+        bert_layerChoice: int=-2, 
+        MAX_SEQ_LEN: int=150, 
+        attn_num :int=2, 
+        out_dim: int=2
+    ):
         super(Classifier_bert, self).__init__()
         self.sourceBert = src_bert
+        self.MAX_SEQ_LEN = MAX_SEQ_LEN
         self.attentionNum = attn_num
         self.outNum = out_dim
     
@@ -42,53 +51,52 @@ class Classifier_bert(nn.Module):
             nn.Sigmoid()
         )
 
-        self.kw_encoder = nn.Sequential(
-            nn.Linear(768, 384),
-            nn.Tanh(),
-            nn.Linear(384, 16),
-            nn.Tanh()
-        )
-
         # Attention
         self.Q = nn.Linear(16, 16)
         self.K = nn.Linear(16, 16)
         self.V = nn.Linear(16, 16)
 
+        self.clsfr = nn.Sequential(
+            nn.Linear(self.MAX_SEQ_LEN, 128),
+            nn.Tanh(),
+            nn.Linear(128, 64), 
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 8),
+            nn.ReLU(),
+            nn.Linear(8, 1),
+            nn.Sigmoid()
+        )
+
         # output
         self.out = nn.Linear(16, self.outNum)
         self.logSoftmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, keyword, text):
+    def forward(self, text):
         """
-        keyword: (batch_size, kw_seq_len)
-        text: (batch_size, text_seq_len)
+        text: (batch_size, MAX_SEQ_LEN)
         """
 
         # get contextualized embedding
-        batch_size = text.shape[0]
-        kw_seq_len = keyword.shape[1]
-        sentVec = self.cvtr_layer(torch.cat((keyword, text), dim=1)) # sentVec: (batch_size, total_seq_len, 768)
+        sentVec = self.cvtr_layer(text) # sentVec: (batch_size, MAX_SEQ_LEN, 768)
 
-        tweet_vec = sentVec[:, kw_seq_len:, :] # tweet_vec: (batch_size, tweet_seq_len, 768)
-        tweet_vec = self.tweet_extractor(tweet_vec) # tweet_vec: (batch_size, tweet_seq_len, 16)
-
-        kwVec = sentVec[:, :kw_seq_len, :] # kwVec: (batch_size, keyword_seq_len, 768)
-        kwVec = self.kw_encoder(kwVec) # kwVec: (batch_size, keyword_seq_len, 16)
-
-        newVec = torch.cat((kwVec, tweet_vec), dim=1) # newVec: (batch_size, total_seq_len, 16)
+        # compression
+        newVec = self.tweet_extractor(sentVec) # newVec: (batch_size, MAX_SEQ_LEN, 16)
 
         # self-attention
         for i in range(self.attentionNum):
-            q = self.Q(newVec) # q: (batch_size, total_seq_len, 16)
-            k = self.K(newVec) # k: (batch_size, total_seq_len, 16)
-            v = self.V(newVec) # v: (batch_size, total_seq_len, 16)
+            q = self.Q(newVec) # q: (batch_size, MAX_SEQ_LEN, 16)
+            k = self.K(newVec) # k: (batch_size, MAX_SEQ_LEN, 16)
+            v = self.V(newVec) # v: (batch_size, MAX_SEQ_LEN, 16)
 
-            A = torch.tanh(torch.bmm(q, k.permute(0, 2, 1))) # A: (batch_size, total_seq_len, total_seq_len)
-            newVec = torch.bmm(A, v) # newVec: (batch_size, total_seq_len, 16)
+            A = torch.tanh(torch.bmm(q, k.permute(0, 2, 1))) # A: (batch_size, MAX_SEQ_LEN, seq_len)
+            newVec = torch.bmm(A, v) # newVec: (batch_size, MAX_SEQ_LEN, 16)
 
-        # output
-        newVec = newVec.permute(0, 2, 1) # newVec: (batch_size, 16, total_seq_len)
-        newVec = newVec.mean(dim=2) # newVec: (batch_size, 16)
-        output = self.logSoftmax(self.out(newVec)) 
+        # classifier
+        newVec = newVec.permute(0, 2, 1) # newVec: (batch_size, 16, MAX_SEQ_LEN)
+        newVec = self.clsfr(newVec) # newVec: (batch_size, 16, 1)
+        newVec = newVec.squeeze(2) # newVec: (batch_size, 16)
+        output = self.logSoftmax(self.out(newVec)) # output: (batch_size, 2)
 
-        return output # output: (batch_size, 2)
+        return output 

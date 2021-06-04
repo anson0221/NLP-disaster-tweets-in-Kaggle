@@ -16,48 +16,35 @@ class collater():
         """
         sample (a list for a batch of samples) : 
             [
-                (keyword_0: list[int], sentence_0: list[int], target_0: int), 
-                (keyword_1: list[int], sentence_1: list[int], target_1: int),
+                (sentence_0: list[int], target_0: int), 
+                (sentence_1: list[int], target_1: int),
                 ..., 
-                (keyword_n: list[int], sentence_n: list[int], target_n: int),
+                (sentence_n: list[int], target_n: int),
             ]
 
         return values:
-            * keyword: (batch_size, kw_seq_len)
             * sentence: (batch_size, sent_seq_len)
             * target: (batch_size)
         """
 
         
 
-        keyword = []
         sentence = []
         target = torch.zeros(len(sample))
         i = 0
-        for kw, sent, tgt in sample:
-            keyword.append(kw)
+        for sent, tgt in sample:
             sentence.append(sent)
             target[i] = tgt
             i += 1
 
-        keyword = pad_sequence(keyword, batch_first=True, padding_value=self.padding) 
         sentence = pad_sequence(sentence, batch_first=True, padding_value=self.padding)
-        return keyword, sentence, target
-
-        # elif self.mode=='test':
-        #     for kw, sent, tgt in sample:
-        #         keyword.append(kw)
-        #         sentence.append(sent)
-
-        #     keyword = pad_sequence(keyword, batch_first=True, padding_value=self.padding) 
-        #     sentence = pad_sequence(sentence, batch_first=True, padding_value=self.padding)
-        #     return keyword, sentence
-
-        
-
+        return sentence, target
+    
 
 class DisasTweet_ds(Dataset):
     def __init__(self, file_path: str='./data/train.csv', src_bert :str="vinai/bertweet-base", mode: str='train'):
+        self.MAX_SEQ_LEN = 150
+
         df = pd.read_csv(file_path)
         print(df.info())
         print(df.describe())
@@ -66,7 +53,7 @@ class DisasTweet_ds(Dataset):
 
         self.tknzr_tweet = AutoTokenizer.from_pretrained(src_bert, use_fast=False)
         self.vocab = self.tknzr_tweet.get_vocab()
-        self.pad_token = self.vocab[self.tknzr_tweet.pad_token]
+        self.pad_token_id = self.vocab[self.tknzr_tweet.pad_token]
 
         nltk.download('stopwords')
         self.stop_words = stopwords.words('english')
@@ -86,23 +73,33 @@ class DisasTweet_ds(Dataset):
 
     def _preprocess_text(self):
         html = re.compile(r'((http)|(https))://\S+') # \S: all non-space symbols
-        for sent in self.text:
-            sent = html.sub(repl=r'', string=sent) # remove URL
+        for i in range(len(self.text)):
+            self.text[i] = html.sub(repl=r'', string=self.text[i]) # remove URL
 
             # remove all stop-words
             for s in self.stop_words:
-                sent = re.sub(pattern=r'\s'+s+r'\s+', repl=r' ', string=sent)
+                self.text[i] = re.sub(pattern=r'\s'+s+r'\s+', repl=r' ', string=self.text[i])
+
+    def _padding(self, sent):
+        if sent.shape[0]>=self.MAX_SEQ_LEN:
+            return sent[:self.MAX_SEQ_LEN]
+        else:
+            apd = torch.zeros(self.MAX_SEQ_LEN-sent.shape[0], dtype=torch.int32)
+            for i in range(apd.shape[0]):
+                apd[i] = self.pad_token_id
+            return torch.cat((sent, apd), dim=0)
             
     def __getitem__(self, idx):
         kw = torch.tensor(self.tknzr_tweet.encode('['+self.keyword[idx]+']: '))
-        sent = self.tknzr_tweet.encode(self.text[idx])
-        sent = torch.tensor([wp for wp in sent if wp not in self.punc]) # remove all punctuation
+        txt = self.tknzr_tweet.encode(self.text[idx])
+        txt = torch.tensor([wp for wp in txt if wp not in self.punc]) # remove all punctuation
+        sent = self._padding(torch.cat((kw, txt), dim=0))
 
         if self.mode=='train':
             tgt = torch.tensor(self.target[idx])
-            return kw, sent, tgt
+            return sent, tgt
         elif self.mode=='test':
-            return kw, sent
+            return sent
 
     def __len__(self):
         return len(self.text)

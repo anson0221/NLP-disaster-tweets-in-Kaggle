@@ -25,13 +25,14 @@ def train(
 ):
     # dataset
     dataset_ = DisasTweet_ds(file_path=data_path, src_bert=source_bert, mode='train')
-    collate_fn_ = collater(pad_value=dataset_.pad_token)
+    collate_fn_ = collater(pad_value=dataset_.pad_token_id)
     train_loader = DataLoader(dataset=dataset_, batch_size=batch_size_, collate_fn=collate_fn_, shuffle=True, drop_last=True)
 
     # model
     model = Classifier_bert(
         src_bert=source_bert, 
-        bert_layerChoice=choose_bert_layer_as_embd, 
+        bert_layerChoice=choose_bert_layer_as_embd,
+        MAX_SEQ_LEN=dataset_.MAX_SEQ_LEN, 
         attn_num=attentionNUM, 
         out_dim=tgt_categoryNum
     ).to(device)
@@ -51,19 +52,17 @@ def train(
         epoch_loss = 0
         print()
         print('Epoch #'+str(epoch))
-        for keyword, sentence, target in tqdm(train_loader):
+        for sentence, target in tqdm(train_loader):
             """
-            * keyword: (batch_size, kw_seq_len)
-            * sentence: (batch_size, sent_seq_len)
+            * sentence: (batch_size, MAX_SEQ_LEN)
             * target: (batch_size)
             """
 
-            keyword = keyword.to(device)
             sentence = sentence.to(device)
             target = target.to(device, dtype=torch.long)
 
             # out: (batch_size, 2)
-            out = model(keyword=keyword, text=sentence)
+            out = model(text=sentence)
             
             loss = 0
             optimizer.zero_grad()
@@ -76,7 +75,7 @@ def train(
 
             epoch_loss += loss.item()
         
-        epoch_loss /= (len(train_loader)*batch_size_)
+        epoch_loss /= (len(train_loader))
         print('Loss : '+str(epoch_loss))
 
         if epoch_loss<BEST_LOSS:

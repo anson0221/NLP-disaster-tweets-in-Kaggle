@@ -14,8 +14,9 @@ def predict(model: Classifier_bert, test_filePath: str, source_bert: str, out_fi
 
     ans = []
     with torch.no_grad():
-        for kw, sent in tqdm(testloader):
-            out = model(keyword=kw, text=sent)
+        for sent in tqdm(testloader):
+            out = model(text=sent)
+                
             prediction = out.argmax(1)
             ans.append(prediction[0])
 
