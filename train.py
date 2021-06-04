@@ -24,7 +24,7 @@ def train(
             device='cpu'
 ):
     # dataset
-    dataset_ = DisasTweet_ds(train_file_path=data_path, src_bert=source_bert)
+    dataset_ = DisasTweet_ds(file_path=data_path, src_bert=source_bert, mode='train')
     collate_fn_ = collater(pad_value=dataset_.pad_token)
     train_loader = DataLoader(dataset=dataset_, batch_size=batch_size_, collate_fn=collate_fn_, shuffle=True, drop_last=True)
 
@@ -40,12 +40,13 @@ def train(
         check_point = torch.load(model_path, map_location=device)
         model.load_state_dict(check_point['model_state_dict'])
         BEST_LOSS = check_point['loss']
+    else:
+        BEST_LOSS = 999999
 
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
     model.train()
 
     # training
-    BEST_LOSS = 999999
     for epoch in range(epochs):
         epoch_loss = 0
         print()
