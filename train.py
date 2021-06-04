@@ -64,7 +64,7 @@ def train(
 
             # out: (batch_size, 2)
             out = model(keyword=keyword, text=sentence)
-
+            
             loss = 0
             optimizer.zero_grad()
             for i in range(batch_size_):
@@ -76,7 +76,7 @@ def train(
 
             epoch_loss += loss.item()
         
-        epoch_loss /= len(train_loader)
+        epoch_loss /= (len(train_loader)*batch_size_)
         print('Loss : '+str(epoch_loss))
 
         if epoch_loss<BEST_LOSS:
