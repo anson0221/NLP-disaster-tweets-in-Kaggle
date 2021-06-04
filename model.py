@@ -55,8 +55,7 @@ class Classifier_bert(nn.Module):
         self.V = nn.Linear(16, 16)
 
         # output
-        self.reduce_dim = nn.Linear(16, 1)
-        self.out = nn.Linear(1, self.outNum)
+        self.out = nn.Linear(16, self.outNum)
         self.logSoftmax = nn.LogSoftmax(dim=1)
 
     def forward(self, keyword, text):
@@ -88,10 +87,8 @@ class Classifier_bert(nn.Module):
             newVec = torch.bmm(A, v) # newVec: (batch_size, total_seq_len, 16)
 
         # output
-        newVec = self.reduce_dim(newVec) # newVec: (batch_size, total_seq_len, 1)
-        newVec = newVec.reshape(batch_size, 1, -1) # newVec: (batch_size, 1, total_seq_len)
-        newVec = newVec.squeeze(1) # newVec: (batch_size, total_seq_len)
-        newVec = torch.sum(newVec, dim=1).unsqueeze(1) # newVec: (batch_size, 1)
+        newVec = newVec.permute(0, 2, 1) # newVec: (batch_size, 16, total_seq_len)
+        newVec = newVec.mean(dim=2) # newVec: (batch_size, 16)
         output = self.logSoftmax(self.out(newVec)) 
 
         return output # output: (batch_size, 2)
