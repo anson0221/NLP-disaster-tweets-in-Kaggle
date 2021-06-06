@@ -57,20 +57,15 @@ class Classifier_bert(nn.Module):
         self.V = nn.Linear(16, 16)
 
         self.clsfr = nn.Sequential(
-            nn.Linear(self.MAX_SEQ_LEN, 128),
+            nn.Linear(16, 8),
             nn.Tanh(),
-            nn.Linear(128, 64), 
+            nn.Linear(8, 4), 
             nn.Tanh(),
-            nn.Linear(64, 32),
-            nn.Tanh(),
-            nn.Linear(32, 8),
-            nn.ReLU(),
-            nn.Linear(8, 1),
+            nn.Linear(4, self.outNum),
             nn.ReLU()
         )
 
         # output
-        self.out = nn.Linear(16, self.outNum)
         self.logSoftmax = nn.LogSoftmax(dim=1)
 
     def forward(self, text):
@@ -80,23 +75,23 @@ class Classifier_bert(nn.Module):
 
         # get contextualized embedding
         sentVec = self.cvtr_layer(text) # sentVec: (batch_size, MAX_SEQ_LEN, 768)
+        sentVec = sentVec.mean(dim=1) # sentVec: (batch_size, 1, 768)
 
         # compression
-        newVec = self.tweet_extractor(sentVec) # newVec: (batch_size, MAX_SEQ_LEN, 16)
+        newVec = self.tweet_extractor(sentVec) # newVec: (batch_size, 1, 16)
 
         # self-attention
         for i in range(self.attentionNum):
-            q = self.Q(newVec) # q: (batch_size, MAX_SEQ_LEN, 16)
-            k = self.K(newVec) # k: (batch_size, MAX_SEQ_LEN, 16)
-            v = self.V(newVec) # v: (batch_size, MAX_SEQ_LEN, 16)
+            q = self.Q(newVec) # q: (batch_size, 1, 16)
+            k = self.K(newVec) # k: (batch_size, 1, 16)
+            v = self.V(newVec) # v: (batch_size, 1, 16)
 
-            A = torch.tanh(torch.bmm(q, k.permute(0, 2, 1))) # A: (batch_size, MAX_SEQ_LEN, seq_len)
-            newVec = torch.bmm(A, v) # newVec: (batch_size, MAX_SEQ_LEN, 16)
+            A = torch.tanh(torch.bmm(q, k.permute(0, 2, 1))) # A: (batch_size, 1, 1)
+            newVec = torch.bmm(A, v) # newVec: (batch_size, 1, 16)
 
         # classifier
-        newVec = newVec.permute(0, 2, 1) # newVec: (batch_size, 16, MAX_SEQ_LEN)
-        newVec = self.clsfr(newVec) # newVec: (batch_size, 16, 1)
-        newVec = newVec.squeeze(2) # newVec: (batch_size, 16)
-        output = self.logSoftmax(self.out(newVec)) # output: (batch_size, 2)
+        newVec = self.clsfr(newVec) # newVec: (batch_size, 1, self.outNum)
+        newVec = newVec.squeeze(1) # newVec: (batch_size, self.outNum)
+        output = self.logSoftmax(newVec) # output: (batch_size, 2)
 
         return output 
