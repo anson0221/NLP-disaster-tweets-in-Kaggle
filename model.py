@@ -62,7 +62,7 @@ class Classifier_bert(nn.Module):
             nn.Tanh(),
             nn.Dropout(p=0.3),
             nn.Linear(8, self.outNum),
-            nn.LeakyReLU()
+            nn.LeakyReLU(negative_slope=0.1)
         )
 
         # output
