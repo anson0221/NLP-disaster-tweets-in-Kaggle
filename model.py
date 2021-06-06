@@ -75,7 +75,7 @@ class Classifier_bert(nn.Module):
 
         # get contextualized embedding
         sentVec = self.cvtr_layer(text) # sentVec: (batch_size, MAX_SEQ_LEN, 768)
-        sentVec = sentVec.mean(dim=1) # sentVec: (batch_size, 1, 768)
+        sentVec = sentVec.mean(dim=1).unsqueeze(1) # sentVec: (batch_size, 1, 768)
 
         # compression
         newVec = self.tweet_extractor(sentVec) # newVec: (batch_size, 1, 16)
