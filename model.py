@@ -70,7 +70,7 @@ class Classifier_bert(nn.Module):
             nn.Tanh(),
             nn.Dropout(p=0.3),
             nn.Linear(16, self.outNum, bias=False),
-            nn.Sigmoid()
+            nn.LeakyReLU(negative_slope=0.04)
         )
 
         # output
@@ -120,6 +120,6 @@ class Classifier_bert(nn.Module):
         # print(sentVec)
         output = self.logSoftmax(sentVec) # output: (batch_size, 2)
         # print('7: ', end='')
-        print(output)
+        # print(output)
 
         return output 

@@ -61,7 +61,6 @@ def train(
 
             sentence = sentence.to(device)
             target = target.to(device, dtype=torch.long)
-            print(target)
             
             out = model(text=sentence)
             
