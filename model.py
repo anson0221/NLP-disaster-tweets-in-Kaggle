@@ -46,22 +46,30 @@ class Classifier_bert(nn.Module):
         self.K = nn.Linear(768, 768)
         self.V = nn.Linear(768, 768)
 
+        # self.clsfr = nn.Sequential(
+        #     nn.Linear(768, 384),
+        #     nn.Tanh(),
+        #     nn.Dropout(p=0.3),
+        #     nn.Linear(384, 128),
+        #     nn.Tanh(),
+        #     nn.Linear(128, 64),
+        #     nn.Tanh(),
+        #     nn.Dropout(p=0.3),
+        #     nn.Linear(64, 16),
+        #     nn.Tanh(),
+        #     nn.Dropout(p=0.3),
+        #     nn.Linear(16, 8),
+        #     nn.Tanh(),
+        #     nn.Dropout(p=0.3),
+        #     nn.Linear(8, self.outNum, bias=False),
+        #     nn.LeakyReLU(negative_slope=0.1)
+        # )
+
         self.clsfr = nn.Sequential(
-            nn.Linear(768, 384),
+            nn.Linear(768, 16),
             nn.Tanh(),
             nn.Dropout(p=0.3),
-            nn.Linear(384, 128),
-            nn.Tanh(),
-            nn.Linear(128, 64),
-            nn.Tanh(),
-            nn.Dropout(p=0.3),
-            nn.Linear(64, 16),
-            nn.Tanh(),
-            nn.Dropout(p=0.3),
-            nn.Linear(16, 8),
-            nn.Tanh(),
-            nn.Dropout(p=0.3),
-            nn.Linear(8, self.outNum, bias=False),
+            nn.Linear(16, self.outNum, bias=False),
             nn.LeakyReLU(negative_slope=0.1)
         )
 
