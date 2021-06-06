@@ -44,8 +44,8 @@ def train(
     else:
         BEST_LOSS = 999999
 
-    # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
-    optimizer = optim.Adam(params=model.parameters(), lr=learning_rate)
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+    # optimizer = optim.Adam(params=model.parameters(), lr=learning_rate)
     model.train()
 
     # training
@@ -55,12 +55,13 @@ def train(
         print('Epoch #'+str(epoch))
         for sentence, target in tqdm(train_loader):
             """
-            * sentence: (batch_size, MAX_SEQ_LEN)
+            * sentence: (batch_size, seq_len)
             * target: (batch_size)
             """
 
             sentence = sentence.to(device)
             target = target.to(device, dtype=torch.long)
+            print(target)
             
             out = model(text=sentence)
             
@@ -97,7 +98,7 @@ if __name__=='__main__':
     attn_layerNum = 2
     batchSize = 8
     epoch_num = 30
-    lr = 0.007
+    lr = 0.00007
     device_ = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     train(

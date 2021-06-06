@@ -107,19 +107,19 @@ class Classifier_bert(nn.Module):
 
 
         sentVec = sentVec.mean(dim=1).unsqueeze(1) # sentVec: (batch_size, 1, 768)
-        print('2: ', end='')
-        print(sentVec)
+        # print('2: ', end='')
+        # print(sentVec)
 
 
         # classifier
         sentVec = self.clsfr(sentVec) # newVec: (batch_size, 1, self.outNum)
-        print('5: ', end='')
-        print(sentVec)
+        # print('5: ', end='')
+        # print(sentVec)
         sentVec = sentVec.squeeze(1) # newVec: (batch_size, self.outNum)
         # print('6: ', end='')
         # print(sentVec)
         output = self.logSoftmax(sentVec) # output: (batch_size, 2)
-        print('7: ', end='')
+        # print('7: ', end='')
         print(output)
 
         return output 

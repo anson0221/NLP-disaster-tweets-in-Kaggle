@@ -30,7 +30,7 @@ class collater():
         
 
         sentence = []
-        target = torch.zeros(len(sample), dtype=torch.int32)
+        target = torch.zeros(len(sample), dtype=torch.long)
         i = 0
         for sent, tgt in sample:
             sentence.append(sent)
@@ -80,14 +80,6 @@ class DisasTweet_ds(Dataset):
             for s in self.stop_words:
                 self.text[i] = re.sub(pattern=r'\s'+s+r'\s+', repl=r' ', string=self.text[i])
 
-    def _padding(self, sent):
-        if sent.shape[0]>=self.MAX_SEQ_LEN:
-            return sent[:self.MAX_SEQ_LEN]
-        else:
-            apd = torch.zeros(self.MAX_SEQ_LEN-sent.shape[0], dtype=torch.int32)
-            for i in range(apd.shape[0]):
-                apd[i] = self.pad_token_id
-            return torch.cat((sent, apd), dim=0)
             
     def __getitem__(self, idx):
         kw = torch.tensor(self.tknzr_tweet.encode('['+self.keyword[idx]+']: '))
