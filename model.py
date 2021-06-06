@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from torch.nn.modules.linear import Linear
 from transformers import AutoModel
+import torch.nn.functional as F
 
 
 class sentencesVec(nn.Module):
@@ -40,29 +40,29 @@ class Classifier_bert(nn.Module):
     
         self.cvtr_layer = sentencesVec(bert=self.sourceBert, layer_index=bert_layerChoice)
 
-        self.tweet_extractor = nn.Sequential(
+        # Attention
+        self.d_sqrt = 768**0.5
+        self.Q = nn.Linear(768, 768)
+        self.K = nn.Linear(768, 768)
+        self.V = nn.Linear(768, 768)
+
+        self.clsfr = nn.Sequential(
             nn.Linear(768, 384),
             nn.Tanh(),
+            nn.Dropout(p=0.3),
             nn.Linear(384, 128),
             nn.Tanh(),
             nn.Linear(128, 64),
             nn.Tanh(),
+            nn.Dropout(p=0.3),
             nn.Linear(64, 16),
-            nn.ReLU()
-        )
-
-        # Attention
-        self.Q = nn.Linear(16, 16)
-        self.K = nn.Linear(16, 16)
-        self.V = nn.Linear(16, 16)
-
-        self.clsfr = nn.Sequential(
+            nn.Tanh(),
+            nn.Dropout(p=0.3),
             nn.Linear(16, 8),
             nn.Tanh(),
-            nn.Linear(8, 4), 
-            nn.Tanh(),
-            nn.Linear(4, self.outNum),
-            nn.ReLU()
+            nn.Dropout(p=0.3),
+            nn.Linear(8, self.outNum),
+            nn.LeakyReLU()
         )
 
         # output
@@ -70,28 +70,48 @@ class Classifier_bert(nn.Module):
 
     def forward(self, text):
         """
-        text: (batch_size, MAX_SEQ_LEN)
+        text: (batch_size, seq_len)
         """
+        # print('0: ', end='')
+        # print(str(text))
 
         # get contextualized embedding
-        sentVec = self.cvtr_layer(text) # sentVec: (batch_size, MAX_SEQ_LEN, 768)
-        sentVec = sentVec.mean(dim=1).unsqueeze(1) # sentVec: (batch_size, 1, 768)
-
-        # compression
-        newVec = self.tweet_extractor(sentVec) # newVec: (batch_size, 1, 16)
+        sentVec = self.cvtr_layer(text) # sentVec: (batch_size, seq_len, 768)
+        # print('1: ', end='')
+        # print(sentVec)
 
         # self-attention
-        for i in range(self.attentionNum):
-            q = self.Q(newVec) # q: (batch_size, 1, 16)
-            k = self.K(newVec) # k: (batch_size, 1, 16)
-            v = self.V(newVec) # v: (batch_size, 1, 16)
+        # for i in range(self.attentionNum):
 
-            A = torch.tanh(torch.bmm(q, k.permute(0, 2, 1))) # A: (batch_size, 1, 1)
-            newVec = torch.bmm(A, v) # newVec: (batch_size, 1, 16)
+        #     q = self.Q(sentVec) # q: (batch_size, seq_len, 768)
+        #     k = self.K(sentVec) # k: (batch_size, seq_len, 768)
+        #     v = self.V(sentVec) # v: (batch_size, seq_len, 768)
+
+        #     a = torch.bmm(q, k.permute(0, 2, 1))/self.d_sqrt # a: (batch_size, seq_len, seq_len)
+        #     print('4_a: ', end='')
+        #     print(a)
+        #     weight = F.softmax(a, dim=2) # weight: (batch_size, seq_len, seq_len)
+        #     print('4_weight: ', end='')
+        #     print(weight)
+        #     sentVec = torch.bmm(weight, v) # newVec: (batch_size, seq_len, 768)
+        #     print('4_sentVec: ', end='')
+        #     print(sentVec)
+
+
+        sentVec = sentVec.mean(dim=1).unsqueeze(1) # sentVec: (batch_size, 1, 768)
+        # print('2: ', end='')
+        # print(sentVec)
+
 
         # classifier
-        newVec = self.clsfr(newVec) # newVec: (batch_size, 1, self.outNum)
-        newVec = newVec.squeeze(1) # newVec: (batch_size, self.outNum)
-        output = self.logSoftmax(newVec) # output: (batch_size, 2)
+        sentVec = self.clsfr(sentVec) # newVec: (batch_size, 1, self.outNum)
+        # print('5: ', end='')
+        # print(sentVec)
+        sentVec = sentVec.squeeze(1) # newVec: (batch_size, self.outNum)
+        # print('6: ', end='')
+        # print(sentVec)
+        output = self.logSoftmax(sentVec) # output: (batch_size, 2)
+        # print('7: ', end='')
+        # print(output)
 
         return output 

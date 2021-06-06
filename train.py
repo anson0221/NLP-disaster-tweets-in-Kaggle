@@ -44,7 +44,8 @@ def train(
     else:
         BEST_LOSS = 999999
 
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+    # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+    optimizer = optim.Adam(params=model.parameters(), lr=learning_rate)
     model.train()
 
     # training
@@ -60,14 +61,12 @@ def train(
 
             sentence = sentence.to(device)
             target = target.to(device, dtype=torch.long)
-
-            # out: (batch_size, 2)
+            
             out = model(text=sentence)
             
             loss = 0
             optimizer.zero_grad()
-            for i in range(batch_size_):
-                loss += criterion(out, target)
+            loss += criterion(out, target)
 
             loss.backward()
             clip_grad_norm_(parameters=model.parameters(), max_norm=clip) # clipping gradient
