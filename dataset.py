@@ -30,7 +30,7 @@ class collater():
         
 
         sentence = []
-        target = torch.zeros(len(sample))
+        target = torch.zeros(len(sample), dtype=torch.int32)
         i = 0
         for sent, tgt in sample:
             sentence.append(sent)
