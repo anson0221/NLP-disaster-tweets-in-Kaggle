@@ -41,10 +41,10 @@ class Classifier_bert(nn.Module):
         self.cvtr_layer = sentencesVec(bert=self.sourceBert, layer_index=bert_layerChoice)
 
         # Attention
-        self.d_sqrt = 768**0.5
-        self.Q = nn.Linear(768, 768)
-        self.K = nn.Linear(768, 768)
-        self.V = nn.Linear(768, 768)
+        # self.d_sqrt = 768**0.5
+        # self.Q = nn.Linear(768, 768)
+        # self.K = nn.Linear(768, 768)
+        # self.V = nn.Linear(768, 768)
 
         # self.clsfr = nn.Sequential(
         #     nn.Linear(768, 384),
@@ -70,7 +70,7 @@ class Classifier_bert(nn.Module):
             nn.Tanh(),
             nn.Dropout(p=0.3),
             nn.Linear(16, self.outNum, bias=False),
-            nn.LeakyReLU(negative_slope=0.1)
+            nn.Sigmoid()
         )
 
         # output
@@ -107,19 +107,19 @@ class Classifier_bert(nn.Module):
 
 
         sentVec = sentVec.mean(dim=1).unsqueeze(1) # sentVec: (batch_size, 1, 768)
-        # print('2: ', end='')
-        # print(sentVec)
+        print('2: ', end='')
+        print(sentVec)
 
 
         # classifier
         sentVec = self.clsfr(sentVec) # newVec: (batch_size, 1, self.outNum)
-        # print('5: ', end='')
-        # print(sentVec)
+        print('5: ', end='')
+        print(sentVec)
         sentVec = sentVec.squeeze(1) # newVec: (batch_size, self.outNum)
         # print('6: ', end='')
         # print(sentVec)
         output = self.logSoftmax(sentVec) # output: (batch_size, 2)
-        # print('7: ', end='')
-        # print(output)
+        print('7: ', end='')
+        print(output)
 
         return output 
