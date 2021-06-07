@@ -51,6 +51,9 @@ def train(
     # training
     for epoch in range(epochs):
         epoch_loss = 0
+        accuracy = 0
+        num_true = 0
+        num_false = 0
         print()
         print('Epoch #'+str(epoch))
         for sentence, target in tqdm(train_loader):
@@ -73,9 +76,19 @@ def train(
             optimizer.step()
 
             epoch_loss += loss.item()
+
+            ans = out.argmax(dim=1) # ans: (batch_size)
+            for i in range(ans.size()[0]):
+                if ans[i]==target[i]:
+                    num_true += 1
+                else:
+                    num_false += 1
         
         epoch_loss /= (len(train_loader))
-        print('Loss : '+str(epoch_loss))
+        print('Loss: '+str(epoch_loss))
+
+        accuracy = num_true/(num_true+num_false)
+        print('Accuracy: '+str(accuracy))
 
         if epoch_loss<BEST_LOSS:
             # save the model
