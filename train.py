@@ -99,9 +99,11 @@ def train(
         
         epoch_loss /= (len(train_loader))
         accuracy = (TN_num+TP_num)/(TN_num+TP_num+FN_num+FP_num)
-        precision = TP_num/(TP_num+FP_num)
-        recall = TP_num/(TP_num+FN_num)
-        f1_score = 2*precision*recall/(precision+recall)
+        if (TP_num+FP_num)>0:
+            precision = TP_num/(TP_num+FP_num)
+            recall = TP_num/(TP_num+FN_num)
+        if precision+recall>0:
+            f1_score = 2*precision*recall/(precision+recall)
 
         print('Loss: '+str(epoch_loss))
         print('Accuracy: '+str(accuracy))
