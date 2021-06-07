@@ -27,8 +27,6 @@ class collater():
             * target: (batch_size)
         """
 
-        
-
         sentence = []
         target = torch.zeros(len(sample), dtype=torch.long)
         i = 0
@@ -43,7 +41,6 @@ class collater():
 
 class DisasTweet_ds(Dataset):
     def __init__(self, file_path: str='./data/train.csv', src_bert :str="vinai/bertweet-base", mode: str='train'):
-        self.MAX_SEQ_LEN = 150
 
         df = pd.read_csv(file_path)
         print(df.info())
@@ -70,7 +67,6 @@ class DisasTweet_ds(Dataset):
 
         self._preprocess_text()
 
-
     def _preprocess_text(self):
         html = re.compile(r'((http)|(https))://\S+') # \S: all non-space symbols
         for i in range(len(self.text)):
@@ -80,12 +76,10 @@ class DisasTweet_ds(Dataset):
             for s in self.stop_words:
                 self.text[i] = re.sub(pattern=r'\s'+s+r'\s+', repl=r' ', string=self.text[i])
 
-            
     def __getitem__(self, idx):
         kw = torch.tensor(self.tknzr_tweet.encode('['+self.keyword[idx]+']: '))
         txt = self.tknzr_tweet.encode(self.text[idx])
         txt = torch.tensor([wp for wp in txt if wp not in self.punc]) # remove all punctuation
-        # sent = self._padding(torch.cat((kw, txt), dim=0))
         sent = torch.cat((kw, txt), dim=0)
 
         if self.mode=='train':

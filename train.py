@@ -18,9 +18,9 @@ def train(
             attentionNUM: int=2,
             tgt_categoryNum: int=2, 
             batch_size_=64, 
-            epochs=20,
+            epochs=30,
             clip=1,
-            learning_rate=0.009, 
+            learning_rate=0.00007, 
             device='cpu'
 ):
     # dataset
@@ -32,7 +32,6 @@ def train(
     model = Classifier_bert(
         src_bert=source_bert, 
         bert_layerChoice=choose_bert_layer_as_embd,
-        MAX_SEQ_LEN=dataset_.MAX_SEQ_LEN, 
         attn_num=attentionNUM, 
         out_dim=tgt_categoryNum
     ).to(device)
@@ -45,13 +44,15 @@ def train(
         BEST_LOSS = 999999
 
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
-    # optimizer = optim.Adam(params=model.parameters(), lr=learning_rate)
     model.train()
 
     # training
     for epoch in range(epochs):
         epoch_loss = 0
         accuracy = 0
+        precision = 0
+        recall = 0
+        f1_score = 0
         
         TP_num = 0
         TN_num = 0
@@ -83,15 +84,17 @@ def train(
 
             ans = out.argmax(dim=1) # ans: (batch_size)
             for i in range(ans.size()[0]):
+                # True
                 if ans[i]==target[i]:
-                    if ans[i]==0:
+                    if ans[i]==0: # Negative
                         TN_num += 1
-                    else:
+                    else: # Positive
                         TP_num += 1
+                # False
                 else:
-                    if ans[i]==0:
+                    if ans[i]==0: # Negative
                         FN_num += 1
-                    else:
+                    else: # Positive
                         FP_num += 1
         
         epoch_loss /= (len(train_loader))
