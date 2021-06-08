@@ -80,8 +80,9 @@ class DisasTweet_ds(Dataset):
         kw = torch.tensor(self.tknzr_tweet.encode('['+self.keyword[idx]+']: '))
         txt = self.tknzr_tweet.encode(self.text[idx])
         txt = torch.tensor([wp for wp in txt if wp not in self.punc]) # remove all punctuation
-        sent = torch.cat((kw, txt), dim=0)
 
+        sent = torch.cat((kw[:-1], txt), dim=0) # kw[:-1] -> remove '[SEP]'
+        
         if self.mode=='train':
             tgt = torch.tensor(self.target[idx])
             return sent, tgt
