@@ -10,14 +10,14 @@ class sentencesVec(nn.Module):
         self.bert_tweet = AutoModel.from_pretrained(bert, output_hidden_states=True)
         self.idx = layer_index
 
-    def forward(self, sent):
+    def forward(self, text):
         """
         transform sentences to vector by BERT
-            * sent: (batch_size, seq_len)
+            text: (batch_size, seq_len)
         """
 
         # object : tuple = (the output of the embeddings, the output of each layer)
-        object = self.bert_tweet(sent)
+        object = self.bert_tweet(text)
 
         hd_states = object.hidden_states[self.idx] # (batch, seq_len, hidden_dim)
 
@@ -72,7 +72,7 @@ class Classifier_bert(nn.Module):
         text: (batch_size, seq_len)
         """
 
-        # get contextualized embedding
+        # contextualized embedding
         sentVec = self.cvtr_layer(text) # sentVec: (batch_size, seq_len, 768)
         
         # self-attention
@@ -88,6 +88,7 @@ class Classifier_bert(nn.Module):
             
             sentVec = torch.bmm(weight, v) # newVec: (batch_size, seq_len, 768)
 
+        # sentence embedding
         sentVec = sentVec.mean(dim=1).unsqueeze(1) # sentVec: (batch_size, 1, 768)
 
         # classifier
