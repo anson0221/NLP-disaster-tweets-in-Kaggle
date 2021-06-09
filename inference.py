@@ -99,4 +99,4 @@ if __name__ == '__main__':
     if sys.argv[2]=='predict':
         predict(model=model, test_filePath='./data/test.csv', source_bert=source_bert, out_file='./data/submission.csv')
     elif sys.argv[2]=='test':
-        test_on_training_set(model=model, train_filePath='./data/train.csv', source_bert=source_bert, out_file='wrong_prediction.csv')
+        test_on_training_set(model=model, train_filePath='./data/train.csv', source_bert=source_bert, out_file='./data/wrong_prediction.csv')
