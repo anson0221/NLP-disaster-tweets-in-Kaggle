@@ -131,7 +131,7 @@ if __name__=='__main__':
     attn_layerNum = 2
     batchSize = 8
     epoch_num = 30
-    lr = 0.00007
+    lr = 0.0007
     device_ = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     train(
