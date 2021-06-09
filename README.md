@@ -11,11 +11,17 @@
 ## 使用方法
 * 訓練
     * 請先至train.py修改欲實驗之參數
-    * python3 train.py 'model_name' 
+    ```shell=
+    python3 train.py 'model_name' 
+    ```
 * 預測
     * predict on the test.csv
-        * python3 inference.py 'model_name' predict
+        ```shell=
+        python3 inference.py 'model_name' predict
+        ```
         * 輸出'./data/submission.csv' -> 傳上[Kaggle](https://www.kaggle.com/c/nlp-getting-started)測試
     * test on the train.csv
-        * python3 inference.py 'model_name' test
+        ```shell=
+        python3 inference.py 'model_name' test
+        ```
         * 輸出'./data/wrong_prediction.csv' -> 觀察是哪些測資在'train.csv'中預測錯誤
