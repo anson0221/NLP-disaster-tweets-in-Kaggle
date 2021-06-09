@@ -7,7 +7,7 @@
         * bertlayer_idx (取BERT的哪層輸出來當embedding)
             * -2 (second-to-last)
         * attn_layerNum (自注意力機制迭代的次數)
-            * = 2
+            * 2
         * batch_size = 64
         * lr = 7e-4
         * epochs: 約300
