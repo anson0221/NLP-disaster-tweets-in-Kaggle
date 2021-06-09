@@ -47,6 +47,8 @@ class DisasTweet_ds(Dataset):
         print(df.describe())
         self.keyword = df['keyword'].fillna('none')
         self.text = df['text'].fillna('none text.')
+        self.ori_text = df['text'].fillna('none text.')
+        self.id = df['id']
 
         self.tknzr_tweet = AutoTokenizer.from_pretrained(src_bert, use_fast=False)
         self.vocab = self.tknzr_tweet.get_vocab()
@@ -62,8 +64,6 @@ class DisasTweet_ds(Dataset):
         self.mode = mode
         if self.mode=='train':
             self.target = df['target'].fillna(0)
-        elif self.mode=='test':
-            self.id = df['id']
 
         self._preprocess_text()
 
